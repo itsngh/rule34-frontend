@@ -1,103 +1,201 @@
+"use client";
+import { Text, Heading, Button, TextField } from "@radix-ui/themes";
+import { Cross1Icon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
+import * as React from "react";
+import { toast } from "sonner";
+
+type SearchResult = {
+	preview_url: string;
+	sample_url: string;
+	file_url: string;
+	directory: number;
+	hash: string;
+	width: number;
+	height: number;
+	id: number;
+	image: string;
+	change: number;
+	owner: string;
+	parent_id: number;
+	rating: "explicit" | "questionable";
+	sample: boolean;
+	sample_height: number;
+	sample_width: number;
+	score: number;
+	tags: string;
+	source: string;
+	status: "active" | "inactive";
+	has_notes: boolean;
+	comment_count: number;
+};
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+	const sectionRef = React.useRef<HTMLDivElement>(null);
+	const [searchQuery, setSearchQuery] = React.useState("");
+	const [results, setResults] = React.useState<SearchResult[]>([]);
+	const [tokens, setTokens] = React.useState<string[]>([]);
+	const [conflicted, setConflicted] = React.useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+	const removeToken = (idx: number) => {
+		setTokens([...tokens].filter((_, i) => i !== idx));
+	};
+
+	const handleSearchRequest = async (tags: string[]) => {
+		if (!tags) return;
+		const params = {
+			s: "post",
+			q: "index",
+			page: "dapi",
+			json: "1",
+			limit: "50",
+			tags: tags.join(" "),
+		};
+		const response = await fetch(
+			"https://api.rule34.xxx/index.php?" +
+				new URLSearchParams(params).toString(),
+		);
+		if (!response.ok) {
+			setResults([]);
+			toast.error("Failed to query results!", {
+				description: `${new Date(Date.now()).toUTCString()}`,
+			});
+			return;
+		}
+		const results: SearchResult[] = await response.json();
+		setResults(results);
+	};
+
+	const handleSearchQueryChange = (
+		event: React.ChangeEvent<HTMLInputElement>,
+	) => {
+		const value = event.target.value;
+		if (!value.endsWith(" ")) {
+			setSearchQuery(value);
+			return;
+		}
+		const token = value.trim();
+		if (!tokens.includes(token)) setTokens([...tokens, token]);
+		setSearchQuery("");
+	};
+
+	// Autocomplete
+	React.useEffect(() => {}, [searchQuery]);
+
+	React.useEffect(() => {
+		const queriedTags = tokens.filter((token) => !token.startsWith("-"));
+		const omittedTags = tokens
+			.filter((token) => token.startsWith("-"))
+			.map((tag) => tag.slice(1));
+		const conflict = queriedTags.some((token) =>
+			omittedTags.includes(token),
+		);
+		if (conflict) {
+			setConflicted(true);
+			return;
+		}
+		setConflicted(false);
+	}, [tokens]);
+
+	return (
+		<div>
+			<section className="w-screen h-screen flex flex-col items-center justify-center gap-y-1">
+				<Heading size={{ initial: "7", lg: "9" }}>
+					web ngu hoc vcl
+				</Heading>
+				<Text>danh, dkgb, ngh</Text>
+				<Button
+					onClick={() =>
+						sectionRef.current?.scrollIntoView({
+							behavior: "smooth",
+						})
+					}
+					variant="outline"
+				>
+					Start using!
+				</Button>
+			</section>
+
+			<section
+				className="h-screen w-screen flex flex-col items-center p-3"
+				ref={sectionRef}
+			>
+				{/* CONTROLLER */}
+				<div className="flex flex-col gap-y-2">
+					{/* input and button and error message */}
+					<div>
+						<div className="flex gap-y-2">
+							<div className="flex flex-row items-center gap-x-2">
+								<TextField.Root
+									size="3"
+									placeholder="Enter your tags..."
+									value={searchQuery}
+									onChange={handleSearchQueryChange}
+								></TextField.Root>
+								<Button
+									disabled={conflicted || tokens.length == 0}
+									variant="outline"
+									size="3"
+									onClick={() => handleSearchRequest(tokens)}
+								>
+									<MagnifyingGlassIcon />
+								</Button>
+							</div>
+						</div>
+						<div>
+							{conflicted ? (
+								<Text color="ruby" size="1">
+									One or more queried tags are colliding!
+								</Text>
+							) : (
+								<></>
+							)}
+						</div>
+					</div>
+
+					{/* tags */}
+					<div className="flex gap-x-2">
+						{tokens.map((token, idx) => {
+							return token.startsWith("-") ? (
+								<Button
+									key={idx}
+									variant="outline"
+									color="ruby"
+									onClick={() => removeToken(idx)}
+								>
+									<Cross1Icon />
+									{token}
+								</Button>
+							) : (
+								<Button
+									key={idx}
+									variant="outline"
+									onClick={() => removeToken(idx)}
+								>
+									<Cross1Icon />
+									{token}
+								</Button>
+							);
+						})}
+					</div>
+				</div>
+
+				{/* CONTENT */}
+				<div className="grid sm:grid-cols-2 lg:grid-cols-5">
+					{results.map((post) => {
+						return (
+							<Image
+								key={post.id}
+								src={post.file_url}
+								width={500}
+								height={500}
+								layout="responsive"
+								alt=""
+							/>
+						);
+					})}
+				</div>
+			</section>
+		</div>
+	);
 }
