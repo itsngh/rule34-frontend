@@ -259,7 +259,7 @@ export default function Home() {
 						</Link>
 					</IconButton>
 					<IconButton variant="surface" asChild>
-						<Link href="https://github.com/itsngh">
+						<Link href="https://github.com/itsngh/rule34-frontend">
 							<GitHubLogoIcon />
 						</Link>
 					</IconButton>
