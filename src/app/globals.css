@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @import "@radix-ui/themes/styles.css";
 
+body {
+	margin: 0;
+}
+
 .radix-themes {
 	--default-font-family: var(--font-inter);
+}
+
+.rt-BaseDialogScrollPadding {
+	padding-left: 0;
+	padding-right: 0;
 }
