@@ -9,22 +9,23 @@ import {
 	Card,
 	Grid,
 	ScrollArea,
+	Box,
 } from "@radix-ui/themes";
 import {
 	CaretDownIcon,
 	Cross1Icon,
 	DiscordLogoIcon,
 	GearIcon,
+	GitHubLogoIcon,
 	MagnifyingGlassIcon,
-	PersonIcon,
 } from "@radix-ui/react-icons";
 import * as React from "react";
 import { toast } from "sonner";
 import Link from "next/link";
-import PostItem from "@/components/postItem";
+import PostItem from "@/components/PostItem";
 import useDebounce from "@/hooks/useDebounce";
 
-const devs = ["kittenhook"];
+const devs = ["ngh", "quynh", "dkgb"];
 
 type PreferencesConfig = {
 	lazyLoading: boolean;
@@ -74,7 +75,6 @@ export default function Home() {
 	React.useEffect(() => {
 		const preferencesConfig = localStorage.getItem("preferencesConfig");
 		const storedBlacklistedTags = localStorage.getItem("blacklistedTags");
-		console.log(storedBlacklistedTags);
 		if (preferencesConfig) {
 			try {
 				const config: PreferencesConfig = JSON.parse(preferencesConfig);
@@ -89,13 +89,15 @@ export default function Home() {
 		}
 	}, []);
 
+	// set conflict flag
 	React.useEffect(() => {
 		const blacklistedQueryTags = queriedTags
 			.filter((tag) => tag.startsWith("-"))
 			.map((tag) => tag.slice(1));
 		if (
 			queriedTags.some((tag) => blacklistedTags.includes(tag)) ||
-			(queriedTags.includes("ai_generated") &&
+			((queriedTags.some((tag) => tag.startsWith("ai_")) ||
+				queriedTags.includes("ai")) &&
 				!prefConfig.aiGeneratedContent) ||
 			blacklistedQueryTags.some((tag) => queriedTags.includes(tag))
 		) {
@@ -118,18 +120,29 @@ export default function Home() {
 
 	const deferredACQuery = useDebounce(queryTextfield, 175);
 
+	// autocomplete logic
+	React.useEffect(() => {
+		if (!queryTextfield) {
+			setACSuggestions([]);
+			return;
+		}
+	}, [queryTextfield]);
 	React.useEffect(() => {
 		if (!deferredACQuery) {
+			console.log("empty text-field, clearing acs!");
 			setACSuggestions([]);
 			return;
 		}
 		const value = deferredACQuery.startsWith("-")
 			? deferredACQuery.slice(1)
 			: deferredACQuery;
+		const controller = new AbortController();
+		const signal = controller.signal;
 		(async () => {
 			try {
 				const response = await fetch(
 					`https://ac.rule34.xxx/autocomplete.php?q=${value}`,
+					{ signal },
 				);
 				const results: autocompleteSuggestions[] =
 					await response.json();
@@ -139,6 +152,9 @@ export default function Home() {
 				return;
 			}
 		})();
+		return () => {
+			controller.abort();
+		};
 	}, [deferredACQuery]);
 
 	const handleTextFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,6 +185,7 @@ export default function Home() {
 		isPastingRef.current = true;
 	};
 
+	// search request
 	const handleSearchRequest = async () => {
 		const signedBlacklistedTags = blacklistedTags.map((tag) => `-${tag}`);
 		if (queriedTags.length <= 0) {
@@ -184,7 +201,14 @@ export default function Home() {
 				new Set([
 					...queriedTags,
 					...signedBlacklistedTags,
-					prefConfig.aiGeneratedContent ? "" : "-ai_generated",
+					prefConfig.aiGeneratedContent
+						? [""]
+						: [
+								"-ai_generated",
+								"-ai_assisted",
+								"-ai_art",
+								"-ai_hands",
+							],
 				]),
 			).join(" "),
 		};
@@ -218,24 +242,34 @@ export default function Home() {
 					height: "100vh",
 				}}
 			>
-				<Heading size={{ initial: "7", lg: "9" }}>
-					web ngu hoc vcl
+				<Heading size={{ initial: "5", lg: "9" }}>
+					Redefining what UI/UX means.
 				</Heading>
 				<Text>{devs.map((dev) => `@${dev}`).join(", ")}</Text>
+				<Text>retarded ui/ux</Text>
 				<Flex gapX="2">
-					<IconButton variant="outline" asChild>
+					<IconButton variant="surface" asChild>
 						<Link href="/preferences">
 							<GearIcon />
 						</Link>
 					</IconButton>
-					<IconButton variant="outline">
-						<DiscordLogoIcon />
+					<IconButton variant="surface" asChild>
+						<Link href="https://discord.com/users/979786819673669671">
+							<DiscordLogoIcon />
+						</Link>
 					</IconButton>
-					<IconButton variant="outline">
-						<PersonIcon />
+					<IconButton variant="surface" asChild>
+						<Link href="https://github.com/itsngh">
+							<GitHubLogoIcon />
+						</Link>
 					</IconButton>
 				</Flex>
-				<CaretDownIcon className="animate-bounce" onClick={scrollTo} />
+				<Box>
+					<CaretDownIcon
+						className="animate-bounce"
+						onClick={scrollTo}
+					/>
+				</Box>
 			</Flex>
 
 			<Flex
@@ -339,7 +373,11 @@ export default function Home() {
 											setQueryTextfield("");
 										}}
 									>
-										<Text>({token.type})</Text>{" "}
+										<Text
+											style={{
+												color: "var(--accent-10)",
+											}}
+										>{`(${token.type})`}</Text>{" "}
 										{token.label}
 									</Text>
 								);
@@ -373,6 +411,7 @@ export default function Home() {
 										lazyLoading={prefConfig.lazyLoading}
 										filename={post.image}
 										sample_url={post.sample_url}
+										file_url={post.file_url}
 										score={post.score}
 										tags={post.tags}
 									/>

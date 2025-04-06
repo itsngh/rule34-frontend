@@ -3,6 +3,7 @@ import Image from "next/image";
 
 type PostItemProps = {
 	lazyLoading: boolean;
+	file_url: string;
 	sample_url: string;
 	filename: string;
 	score: number;
@@ -33,7 +34,7 @@ export default function PostItem(props: PostItemProps) {
 						layout="responsive"
 						height={1}
 						width={1}
-						src={props.sample_url}
+						src={props.file_url}
 						alt=""
 					/>
 				</Dialog.Content>

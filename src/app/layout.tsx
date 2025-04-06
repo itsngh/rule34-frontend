@@ -4,7 +4,6 @@ import { Flex, Section, Theme, Text } from "@radix-ui/themes";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import "./globals.css";
-
 import {
 	CheckIcon,
 	Cross1Icon,
@@ -13,6 +12,7 @@ import {
 	CircleIcon,
 } from "@radix-ui/react-icons";
 import Link from "next/link";
+import StripeCanvas from "@/components/StripeGradient";
 
 const inter = Inter({
 	subsets: ["latin", "vietnamese"],
@@ -25,8 +25,8 @@ const jbm = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "web sex cua 3ae",
-	description: "danh, dkgb, ngh",
+	title: "web sex vi en",
+	description: "dit cu chung m",
 };
 
 export default function RootLayout({
@@ -39,14 +39,11 @@ export default function RootLayout({
 			<body
 				className={`${inter.variable} ${jbm.variable} antialiased min-h-screen overflow-x-hidden mx-0 my-0`}
 			>
-				<ThemeProvider attribute="class">
-					<Theme accentColor="sky" scaling="95%">
+				<ThemeProvider attribute="class" enableSystem>
+					<Theme accentColor="lime" scaling="95%">
+						<StripeCanvas />
 						<main className="min-h-screen pt-0">{children}</main>
-						<Section
-							style={{
-								backgroundColor: "var(--gray-2)",
-							}}
-						>
+						<Section>
 							<Flex
 								mx={{
 									initial: "3",
@@ -83,7 +80,6 @@ export default function RootLayout({
 							}}
 							theme="system"
 						/>
-						{/* <ThemePanel /> */}
 					</Theme>
 				</ThemeProvider>
 			</body>
